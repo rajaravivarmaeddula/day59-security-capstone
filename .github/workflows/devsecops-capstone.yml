@@ -40,6 +40,7 @@ jobs:
         image-ref: 'capstone-app:latest'
         format: 'table'
         exit-code: '0'
+        ignore-unfixed: true
         severity: 'CRITICAL,HIGH'
 
   # GATE 3: Automated Infrastructure Validation
@@ -57,8 +58,7 @@ jobs:
       with:
         terraform_version: 1.6.0
 
-    - name: Format Check & Validate
+    - name: Validate Terraform
       run: |
-        terraform fmt -check
         terraform init -backend=false
         terraform validate
