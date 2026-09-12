@@ -14,12 +14,15 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Run Checkov Static Security Scan
-      uses: bridgecrewio/checkov-action@master
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        framework: terraform
-        output_format: cli
-        soft_fail: true
+        python-version: '3.11'
+
+    - name: Install & Run Checkov
+      run: |
+        pip install checkov
+        checkov -d . --framework terraform || true
 
   # GATE 2: Container CVE Vulnerability Gate
   container-security-gate:
@@ -34,13 +37,10 @@ jobs:
     - name: Build Local Container Image
       run: docker build -t capstone-app:latest .
 
-    - name: Run Trivy Security Vulnerability Scan
-      uses: aquasecurity/trivy-action@0.20.0
-      with:
-        image-ref: 'capstone-app:latest'
-        format: 'table'
-        exit-code: '0'
-        severity: 'CRITICAL,HIGH'
+    - name: Install & Run Trivy Scanner
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        trivy image --severity CRITICAL,HIGH capstone-app:latest || true
 
   # GATE 3: Automated Infrastructure Validation
   terraform-validation-gate:
@@ -56,8 +56,8 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.0
-        terraform_wrapper: false
 
     - name: Validate Terraform Syntax
       run: |
-        terraform fmt -check
+        terraform init -backend=false
+        terraform validate
