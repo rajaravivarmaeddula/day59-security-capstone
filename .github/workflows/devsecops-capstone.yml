@@ -1,0 +1,63 @@
+name: Day 59 - DevSecOps Master Security Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  # GATE 1: Static Code & IaC Analysis
+  iac-security-gate:
+    name: 1. Terraform Security Gate (Checkov)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Run Checkov Static Security Scan
+      uses: bridgecrewio/checkov-action@master
+      with:
+        framework: terraform
+        output_format: cli
+        soft_fail: true
+
+  # GATE 2: Container CVE Vulnerability Gate
+  container-security-gate:
+    name: 2. Container Vulnerability Gate (Trivy)
+    needs: iac-security-gate
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Build Local Container Image
+      run: docker build -t capstone-app:latest .
+
+    - name: Run Trivy Security Vulnerability Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'capstone-app:latest'
+        format: 'table'
+        exit-code: '0'
+        severity: 'CRITICAL,HIGH'
+
+  # GATE 3: Automated Infrastructure Validation
+  terraform-validation-gate:
+    name: 3. Terraform Validation & Format Gate
+    needs: container-security-gate
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+
+    - name: Validate Terraform Syntax
+      run: |
+        terraform init -backend=false
+        terraform validate
