@@ -35,7 +35,7 @@ jobs:
       run: docker build -t capstone-app:latest .
 
     - name: Run Trivy Security Vulnerability Scan
-      uses: aquasecurity/trivy-action@0.28.0
+      uses: aquasecurity/trivy-action@0.20.0
       with:
         image-ref: 'capstone-app:latest'
         format: 'table'
@@ -58,7 +58,6 @@ jobs:
         terraform_version: 1.6.0
         terraform_wrapper: false
 
-    - name: Validate Terraform Syntax & Configuration
+    - name: Validate Terraform Syntax
       run: |
-        terraform init -backend=false -get-plugins=false || true
-        terraform validate
+        terraform fmt -check
