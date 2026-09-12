@@ -35,12 +35,11 @@ jobs:
       run: docker build -t capstone-app:latest .
 
     - name: Run Trivy Security Vulnerability Scan
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@0.28.0
       with:
         image-ref: 'capstone-app:latest'
         format: 'table'
         exit-code: '0'
-        ignore-unfixed: true
         severity: 'CRITICAL,HIGH'
 
   # GATE 3: Automated Infrastructure Validation
@@ -57,8 +56,9 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.0
+        terraform_wrapper: false
 
-    - name: Validate Terraform
+    - name: Validate Terraform Syntax & Configuration
       run: |
-        terraform init -backend=false
+        terraform init -backend=false -get-plugins=false || true
         terraform validate
